@@ -75,7 +75,7 @@ async function runCron() {
       .filter((v) => /^\d{4}-\d{2}-\d{2}$/.test(v.date) && v.date >= lo && v.date <= hi);
     for (const v of evs) {
       for (const d of duesOf(v, alarmTime)) {
-        if (d.at > now || now - d.at > CATCH_UP) continue;
+        if (!Number.isFinite(d.at) || d.at > now || now - d.at > CATCH_UP) continue; // 날짜·시간이 틀린 일정 한 건 때문에 다른 사람 알림까지 멈추지 않게
         const key = new Date(d.at).toISOString();
         // 먼저 기록(중복 키면 이미 보낸 것) → 그다음 발송
         const { error: e3 } = await db.from('card_plan_push_log').insert({ user_id: uid, event_id: v.id, kind: d.kind, due: key });

@@ -2,7 +2,7 @@
    화면(index.html)은 항상 인터넷에서 먼저 받고(예전 화면이 남지 않게), 안 되면 저장해 둔 사본을 씁니다.
    같은 주소의 GET 요청만 다루고, 다른 주소(SheetJS cdnjs 등)는 건드리지 않습니다.
    파일을 바꿔 배포할 때는 SW_VERSION을 올립니다. */
-const SW_VERSION = '2026-11-03-1';
+const SW_VERSION = '2026-11-11-1';
 const CACHE = 'card-plan-' + SW_VERSION;
 const FILES = ['./', './index.html', './privacy.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png', './tax/engine.js', './tax/rules-2025.js', './tax/rules-2026.js'];
 
@@ -18,10 +18,13 @@ self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
   if (req.mode === 'navigate' || url.pathname.endsWith('/index.html')) {
+    // 앱 화면은 './index.html'로, 개인정보처리방침 등 다른 화면은 그 주소 그대로 저장합니다(서로 덮어쓰지 않게).
+    const isApp = url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
+    const key = isApp ? './index.html' : new Request(url.pathname);
     e.respondWith(fetch(req).then(res => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); }
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(key, copy)); }
       return res;
-    }).catch(() => caches.match('./index.html')));
+    }).catch(() => caches.match(key).then(hit => hit || caches.match('./index.html'))));
     return;
   }
   e.respondWith(caches.match(req).then(hit => hit || fetch(req)));

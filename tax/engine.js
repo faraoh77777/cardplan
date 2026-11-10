@@ -271,7 +271,7 @@
     var general = Math.min(deductible, tier.basic);
     var over = Math.max(0, deductible - tier.basic);
     var specialDed = rateAmt.C + rateAmt.D + rateAmt.E;
-    var extra = Math.min(over, specialDed, tier.extra);
+    var extra = Math.max(0, Math.min(over, specialDed, tier.extra));
     var totalDed = general + extra;
     return {
       eligible: total >= minUse, minUse: minUse, total: total, sums: sums, rateAmounts: rateAmt,
