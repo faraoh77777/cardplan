@@ -24,8 +24,12 @@ drop trigger if exists card_plan_settings_touch on public.card_plan_settings;
 create trigger card_plan_settings_touch before update on public.card_plan_settings for each row execute function public.card_plan_touch();
 
 -- 한 사람이 서버를 가득 채우지 못하게 내역은 사용자당 5만 건까지
+-- 이미 있는 행을 고치는 upsert(INSERT … ON CONFLICT DO UPDATE)도 이 트리거를 거치므로, 같은 행이 있으면 세지 않고 통과(v1.31.7)
 create or replace function public.card_plan_records_limit() returns trigger language plpgsql security definer set search_path = public as $$
 begin
+  if exists (select 1 from public.card_plan_records where user_id = new.user_id and id = new.id) then
+    return new;
+  end if;
   if (select count(*) from public.card_plan_records where user_id = new.user_id) >= 50000 then
     raise exception 'card_plan_records limit 50000';
   end if;
